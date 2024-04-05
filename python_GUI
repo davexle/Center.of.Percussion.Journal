@@ -1,0 +1,221 @@
+'''
+This is a Python code that does three things
+1. Uses the Tkinter library to create a GUI
+2. Connects to an Arduino board using the Pymata library
+3. Maps the commands of the Arduino to the GUI
+
+Prior to running this code, the Firmata Express example code must be run first on the Arduino IDE 
+'''
+
+
+from threading import Thread
+import time
+from pymata4 import pymata4
+#from PIL import ImageTk, Image
+import os
+from tkinter import *
+import cv2
+#import PIL.Image
+
+running = False
+
+board = pymata4.Pymata4()
+
+global pin_pulse
+global pin_direction
+pin_pulse = 9
+pin_direction = 8
+board.set_pin_mode_digital_output(pin_pulse)
+board.set_pin_mode_digital_output(pin_direction)
+
+global y
+y = 175
+global count
+count = 0
+global record
+
+def start_motor_forward(event):
+    global running
+    print("starting motor...")
+    running = True
+    t = Thread(target=motor_forward, args=())
+    t.start()
+
+def motor_forward():
+    global pin_pulse
+    global pin_direction
+    global count
+    board.digital_write(pin_direction, 0)  # setting direction forward
+    while running:
+        board.digital_write(pin_pulse, 1)  # hitting it with pulse
+        time.sleep(.0001)  # in seconds
+        board.digital_write(pin_pulse, 0)  # hitting it with pulse
+        count += 1
+
+def start_motor_reverse(event):
+    global running
+    print("starting motor...")
+    running = True
+    t = Thread(target=motor_reverse, args=())
+    t.start()
+
+
+def motor_reverse():
+    global pin_pulse
+    global pin_direction
+    global count
+    board.digital_write(pin_direction, 1)  # setting direction forward
+    while running:
+        board.digital_write(pin_pulse, 1)  # hitting it with pulse
+        time.sleep(.0001)  # in seconds
+        board.digital_write(pin_pulse, 0)  # hitting it with pulse
+        count += 1
+
+def stop_it(event):
+    global running
+    global pin_pulse
+    global count
+    running = False
+    board.digital_write(pin_pulse, 0)
+    print("stopping motor...")
+    move_btn_four(count*.01443)
+    count = 0
+
+def stop_it_two(event):
+    global running
+    global pin_pulse
+    global count
+    running = False
+    board.digital_write(pin_pulse, 0)
+    print("stopping motor...")
+    move_btn_three(count * .01443)
+    count = 0
+
+def close_window(event):
+    window.destroy()
+
+
+window = Tk()
+
+
+def set_distance_forward():
+    print("move forward...\n")
+    pins = [8, 9, 10, 11]
+    board.set_pin_mode_stepper(400, pins)
+    board.stepper_write(500, int(up.get()) * 420)
+    move_btn_three(int(up.get())*6.061)
+
+
+def set_distance_backward():
+    print("move backward...\n")
+    pins = [9, 8, 10, 11]
+    board.set_pin_mode_stepper(400, pins)
+    board.stepper_write(500, int(down.get()) * 420)
+    move_btn_four(int(down.get())*6.061)
+
+def display_record(event):
+    global record
+    record = Label(image=recording_label)
+    record.place(x=600, y=0)
+def shoot_solenoid(event):
+    global record
+    print("Shooting solenoid")
+    solenoid_pin = 13
+    board.set_pin_mode_digital_output(12)
+    board.digital_write(12, 1) #activating reading
+    #time.sleep(5)
+    board.set_pin_mode_digital_output(solenoid_pin)
+    board.digital_write(solenoid_pin, 1)
+    time.sleep(.5)
+    board.digital_write(solenoid_pin, 0)
+    #time.sleep(5)
+    board.digital_write(12, 0)  # stopping reading
+    record.destroy()
+
+
+def counter(event):
+    global running_two
+    print("starting motor...")
+    running_two = True
+    t = Thread(target=counting, args=())
+    t.start()
+
+def counting():
+    while running_two:
+        global count
+        count += 1
+        print(count)
+        time.sleep(.1)
+
+def move_btn(event):
+    global y
+    global count
+    global running_two
+    y += count
+    buttonThree.place(x=880, y=y)
+    count = 0
+    running_two = False
+
+def move_btn_three(num):
+    global y
+    y += num
+    buttonThree.place(x=880, y=y)
+
+def move_btn_four(num):
+    global y
+    y -= num
+    buttonThree.place(x=880, y=y)
+
+window.title('Center of Percussion' )
+
+window.geometry("1101x800")
+black_circle = PhotoImage(file = 'black_circle_four.png')
+arrow = PhotoImage(file = 'arrow.png')
+
+recording_label = PhotoImage(file = 'final_record_icon.png')
+
+COP_bg = PhotoImage(file = 'cop.png')
+img_label = Label(image = COP_bg)
+img_label.place(x = 600,y = 0)
+buttonOne = Button(window, text = "↑",font=("Ink Free", 50), bg='#5689db')
+buttonOne.place(x=0, y =0, height = 300, width = 600)
+buttonOne.bind('<ButtonPress-1>',start_motor_forward)
+buttonOne.bind('<ButtonRelease-1>',stop_it)
+
+buttonTwo = Button(window, text = "↓",font=("Ink Free", 50), bg='#309c09')
+buttonTwo.place(x=0, y =300, height = 300, width = 600)
+
+buttonTwo.bind('<ButtonPress-1>',start_motor_reverse)
+buttonTwo.bind('<ButtonRelease-1>',stop_it_two)
+
+window.bind('<Escape>', close_window)
+
+up = Entry()
+
+
+up.config(font=('Times New Roman', 50))
+up.place(x = 250, y = 300, height = 100, width = 100)
+
+
+up_submit = Button(window, text = "enter", command = set_distance_forward)
+up_submit.place(x = 350, y = 335, )
+
+
+down = Entry()
+
+down.config(font=('Times New Roman', 50))
+down.place(x = 250, y = 200, height = 100, width = 100)
+
+
+down_submit = Button(window, text = "enter", command = set_distance_backward)
+down_submit.place(x = 350, y = 235, )
+
+solenoid_button = Button(window, text = "SHOOT", font=("Ariel", 30), bg='#229954')
+solenoid_button.place(x = 0, y = 0, height = 150, width = 150)
+solenoid_button.bind('<ButtonPress-1>',display_record)
+solenoid_button.bind('<ButtonRelease-1>',shoot_solenoid)
+
+buttonThree = Button(window, image = arrow, borderwidth=0)
+buttonThree.place(x=880, y = y, height = 50, width = 50)
+
+window.mainloop()
