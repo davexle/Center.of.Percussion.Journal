@@ -123,7 +123,7 @@ def shoot_solenoid(event):
     solenoid_pin = 13
     board.set_pin_mode_digital_output(12)
     board.digital_write(12, 1) #activating reading
-    #time.sleep(5)
+    time.sleep(5)
     board.set_pin_mode_digital_output(solenoid_pin)
     board.digital_write(solenoid_pin, 1)
     time.sleep(.5)
