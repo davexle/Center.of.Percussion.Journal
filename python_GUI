@@ -4,7 +4,8 @@ This is a Python code that does three things
 2. Connects to an Arduino board using the Pymata library
 3. Maps the commands of the Arduino to the GUI
 
-Prior to running this code, the Firmata Express code must be run first on the Arduino IDE 
+Prior to running this code, the Firmata Express code must be run first on the Arduino IDE. Once you add FirmataExpress
+as a custom library to your Arduino IDE, go to File -> Examples -> FirmataExpress. 
 '''
 
 
